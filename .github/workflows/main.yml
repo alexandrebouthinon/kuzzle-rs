@@ -32,6 +32,6 @@ jobs:
     - name: Launch Kuzzle stack
       run: docker compose up -d
     - name: Build all the examples
-      run: for example in examples/*.rs; do cargo build --example "$(basename "$example")" -- $args; done
+      run: for example in examples/*.rs; do cargo build --example "$(echo "$example" | cut -d/ -f 2 | cut -d. -f 1)" -- $args; done
     - name: Run examples
-      run: for example in examples/*.rs; do echo "Running $(basename "$example")..."; cargo run --example "$(basename "$example")" -- $args; done
+      run: for example in examples/*.rs; do export EXAMPLE=$(echo "$example" | cut -d/ -f 2 | cut -d. -f 1) && echo "Running $EXAMPLE ..." && cargo run --example "$EXAMPLE"; done
