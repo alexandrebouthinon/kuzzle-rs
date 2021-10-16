@@ -1,8 +1,22 @@
 [package]
-name = "kuzzle-rs"
+name = "kuzzle"
 version = "0.1.0"
+authors = ["Alexandre Bouthinon <bouthinon.alexandre@gmail.com>"]
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
+# Dependencies ----------------------------------------------------------------
 [dependencies]
+async-native-tls = "0.3.3"
+async-std = { version = "1.6.0", default_features = false }
+async-trait = "0.1.32"
+async-tungstenite = { version = "0.15.0", default_features = false, features = [ "async-std-runtime", "async-native-tls" ] }
+futures-util = { version = "0.3", default-features = false, features = [ "async-await", "sink", "std" ] }
+serde_json = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+url = "2.1.1"
+uuid = { version = "0.8", default_features = false, features = ["v4"] }
+
+# Development dependencies ----------------------------------------------------
+[dev-dependencies]
+async-std = { version = "1.6.0", default_features = false, features = [ "attributes" ] }
+faux = "0.1.3"
