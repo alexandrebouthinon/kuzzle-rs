@@ -42,5 +42,5 @@ jobs:
         for example in examples/*.rs;
         do 
           echo "Running $(basename "$example")...";
-          cargo run --example "$(echo "$example" | cut -d/ -f 2 | cut -d. -f 1) -q"; 
+          cargo run -q --example "$(echo "$example" | cut -d/ -f 2 | cut -d. -f 1)"; 
         done
