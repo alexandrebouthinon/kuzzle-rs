@@ -1,0 +1,78 @@
+---
+version: "3"
+
+services:
+  traefik:
+    image: traefik
+    container_name: traefik
+    ports:
+      - "7512:7512"
+      - "1883:1883"
+    depends_on:
+      kuzzle:
+        condition: service_healthy
+    command:
+      - --log.level=DEBUG
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.endpoint=unix:///var/run/docker.sock
+      - --entrypoints.kuzzle_http.address=:7512
+      - --entrypoints.kuzzle_mqtt.address=:1883
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+
+  kuzzle:
+    image: kuzzleio/kuzzle:2
+    depends_on:
+      redis:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://kuzzle:7512/_publicApi"]
+      timeout: 10s
+      interval: 10s
+      retries: 3
+    labels:
+      - "traefik.enable=true"
+      # Kuzzle HTTP/WS
+      - "traefik.http.services.kuzzle_http.loadbalancer.server.port=7512"
+      - "traefik.http.services.kuzzle_http.loadbalancer.healthCheck.path=/_healthCheck"
+      - "traefik.http.routers.kuzzle.entrypoints=kuzzle_http"
+      - "traefik.http.routers.kuzzle.rule=Host(`localhost`)"
+      - "traefik.http.routers.kuzzle.service=kuzzle_http"
+      # Kuzzle MQTT
+      - "traefik.tcp.services.kuzzle_mqtt.loadbalancer.server.port=1883"
+      - "traefik.tcp.routers.kuzzle.entrypoints=kuzzle_mqtt"
+      - "traefik.tcp.routers.kuzzle.rule=HostSNI(`*`)"
+      - "traefik.tcp.routers.kuzzle.service=kuzzle_mqtt"
+    environment:
+      - kuzzle_services__storageEngine__client__node=http://elasticsearch:9200
+      - kuzzle_services__internalCache__node__host=redis
+      - kuzzle_services__memoryStorage__node__host=redis
+      - kuzzle_server__protocols__mqtt__enabled=true
+      - kuzzle_server__protocols__mqtt__developmentMode=false
+      - NODE_ENV=production
+
+  redis:
+    image: redis:5
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 1s
+      timeout: 3s
+      retries: 30
+
+  elasticsearch:
+    image: elasticsearch:7.10.1
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200"]
+      interval: 2s
+      timeout: 2s
+      retries: 10
+    ulimits:
+      nofile: 65536
+    environment:
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - node.name=alyx
+      - cluster.name=kuzzle
+      - discovery.type=single-node
