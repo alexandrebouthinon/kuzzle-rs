@@ -5,10 +5,16 @@ on:
     branches: 
       - master
       - develop
+    paths-ignore:
+      - '**/README.md'
+      - '**/.gitignore'
   pull_request:
     branches: 
       - master
       - develop
+    paths-ignore:
+      - '**/README.md'
+      - '**/.gitignore'
 
 env:
   CARGO_TERM_COLOR: always
