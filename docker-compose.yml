@@ -22,7 +22,7 @@ services:
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
 
   kuzzle:
-    image: kuzzleio/kuzzle:2
+    image: kuzzleio/kuzzle:2.13.4
     depends_on:
       redis:
         condition: service_healthy
