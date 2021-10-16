@@ -96,7 +96,15 @@ mod tests {
         let mut protocol = MockedProtocol::faux();
         faux::when!(protocol.send).then(|_| {
             Ok(String::from(
-                r#"{"requestId": "my-fake-request-id", "status": 200, "result": { "success": true }}"#,
+                r#"{
+                    "requestId": "my-fake-request-id",
+                    "action": "fakeAction",
+                    "controller": "fakeController",
+                    "status": 200, 
+                    "result": {
+                        "success": true 
+                    }
+                }"#,
             ))
         });
         let mut kuzzle = Kuzzle::new(protocol);
