@@ -31,7 +31,7 @@ jobs:
     - uses: actions/checkout@v2
     - name: Launch Kuzzle stack
       run: docker compose up -d
-    - name: Build
-      run: cargo build --verbose
+    - name: Build all the examples
+      run: for example in examples/*.rs; do cargo build --example "$(basename "$example")" -- $args; done
     - name: Run examples
-      run: cargo run --example now
+      run: for example in examples/*.rs; do echo "Running $(basename "$example")..."; cargo run --example "$(basename "$example")" -- $args; done
