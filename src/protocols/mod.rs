@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use std::error::Error as Errors;
 
 pub mod websocket;
-pub use self::websocket::WebSocket;
+pub use self::websocket::{WebSocket, WebSocketOptions};
 
 #[async_trait]
 pub trait Protocol {

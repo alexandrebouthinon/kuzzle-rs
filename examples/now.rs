@@ -1,8 +1,9 @@
-use kuzzle::{protocols::WebSocket, request, Kuzzle};
+use kuzzle::protocols::WebSocket;
+use kuzzle::{request, Kuzzle};
 
 #[async_std::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut k = Kuzzle::new(WebSocket::new("localhost", 7512, false));
+    let mut k = Kuzzle::new(WebSocket::new("localhost", None));
     k.connect().await?;
 
     let request = request!({

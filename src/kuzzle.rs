@@ -8,7 +8,10 @@ pub struct Kuzzle {
 }
 
 impl Kuzzle {
-    pub fn new<P: 'static + Protocol>(protocol: P) -> Kuzzle {
+    pub fn new<P>(protocol: P) -> Kuzzle
+    where
+        P: 'static + Protocol,
+    {
         Kuzzle {
             protocol: Box::new(protocol),
         }

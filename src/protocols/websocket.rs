@@ -14,10 +14,67 @@ use url::Url;
 
 use super::Protocol;
 
+pub struct WebSocketOptions {
+    pub port: u16,
+    pub headers: Vec<(String, String)>,
+    pub ssl: bool,
+    pub reconnection_delay: u64,
+    pub ping_interval: u64,
+    pub auto_reconnect: bool,
+}
+
+impl Default for WebSocketOptions {
+    fn default() -> Self {
+        Self {
+            port: 7512,
+            headers: Vec::new(),
+            ssl: false,
+            reconnection_delay: 1000,
+            ping_interval: 2000,
+            auto_reconnect: true,
+        }
+    }
+}
+
+impl WebSocketOptions {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn port(mut self, port: u16) -> Self {
+        self.port = port;
+        self
+    }
+
+    pub fn headers(mut self, headers: Vec<(String, String)>) -> Self {
+        self.headers = headers;
+        self
+    }
+
+    pub fn ssl(mut self, ssl: bool) -> Self {
+        self.ssl = ssl;
+        self
+    }
+
+    pub fn reconnection_delay(mut self, reconnection_delay: u64) -> Self {
+        self.reconnection_delay = reconnection_delay;
+        self
+    }
+
+    pub fn ping_interval(mut self, ping_interval: u64) -> Self {
+        self.ping_interval = ping_interval;
+        self
+    }
+
+    pub fn auto_reconnect(mut self, auto_reconnect: bool) -> Self {
+        self.auto_reconnect = auto_reconnect;
+        self
+    }
+}
+
 pub struct WebSocket {
     host: String,
-    port: u16,
-    ssl: bool,
+    options: WebSocketOptions,
     stream: Option<WebSocketStream<Stream<TcpStream, TlsStream<TcpStream>>>>,
 }
 
@@ -29,13 +86,12 @@ impl WebSocket {
     /// ```
     /// use kuzzle::protocols::WebSocket;
     ///
-    /// let websocket = WebSocket::new("localhost", 7512, false);
+    /// let websocket = WebSocket::new("localhost", None);
     /// ```
-    pub fn new(host: &str, port: u16, ssl: bool) -> WebSocket {
+    pub fn new(host: &str, options: Option<WebSocketOptions>) -> WebSocket {
         WebSocket {
             host: host.into(),
-            port,
-            ssl,
+            options: options.unwrap_or(WebSocketOptions::new()),
             stream: None,
         }
     }
@@ -47,13 +103,13 @@ impl WebSocket {
     /// ```
     /// use kuzzle::protocols::WebSocket;
     ///
-    /// let websocket = WebSocket::new("localhost", 7512, false);
+    /// let websocket = WebSocket::new("localhost", None);
     /// assert_eq!("ws://localhost:7512", &websocket.get_url());
     /// ```
     pub fn get_url(&self) -> String {
-        match &self.ssl {
-            true => format!("wss://{}:{}", self.host, self.port),
-            false => format!("ws://{}:{}", self.host, self.port),
+        match &self.options.ssl {
+            true => format!("wss://{}:{}", self.host, self.options.port),
+            false => format!("ws://{}:{}", self.host, self.options.port),
         }
     }
 }
@@ -101,26 +157,19 @@ mod tests {
 
     #[test]
     fn should_forge_ws_url() {
-        let ws = WebSocket::new("localhost", 7512, false);
+        let ws = WebSocket::new("localhost", None);
         assert_eq!(ws.get_url(), "ws://localhost:7512");
     }
 
     #[test]
     fn should_forge_wss_url() {
-        let ws = WebSocket::new("localhost", 443, true);
-        assert_eq!(ws.get_url(), "wss://localhost:443");
+        let ws = WebSocket::new("localhost", Some(WebSocketOptions::new().ssl(true)));
+        assert_eq!(ws.get_url(), "wss://localhost:7512");
     }
 
     #[async_std::test]
     async fn should_not_connect_with_bad_url() {
-        let mut ws = WebSocket::new("localhost42", 7512, false);
-        let result = ws.connect().await;
-        assert!(result.is_err());
-    }
-
-    #[async_std::test]
-    async fn should_not_connect() {
-        let mut ws = WebSocket::new("localhost", 4242, false);
+        let mut ws = WebSocket::new("localhost42", None);
         let result = ws.connect().await;
         assert!(result.is_err());
     }
