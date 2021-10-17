@@ -14,10 +14,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let response = k.query(&request).await?;
 
     match response.get_result() {
-        Some(result) => {
-            let now: u64 = serde_json::from_value(result["now"].clone())?;
-            println!("Kuzzle current Epoc timestamp: {}", now)
-        }
+        Some(result) => println!("Kuzzle current Epoc timestamp: {}", &result["now"]),
         None => eprintln!("No timestamp was reveived from the Kuzzle server!"),
     }
 

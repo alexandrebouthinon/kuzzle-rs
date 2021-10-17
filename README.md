@@ -16,11 +16,12 @@ The SDK supports different protocols. When instantiating,
 you must choose the protocol to use and fill in the different options needed to connect to Kuzzle.  
 
 ```rust
-use kuzzle::{protocols::WebSocket, request, Kuzzle};
+use kuzzle::protocols::WebSocket;
+use kuzzle::{request, Kuzzle};
 
 #[async_std::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut k = Kuzzle::new(WebSocket::new("localhost", 7512, false));
+    let mut k = Kuzzle::new(WebSocket::new("localhost", None));
     k.connect().await?;
 
     let request = request!({
@@ -30,17 +31,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let response = k.query(&request).await?;
 
-    match response.get_result().unwrap() {
-        Some(result) => {
-            let now: u64 = serde_json::from_value(result["now"].clone())?;
-            println!("Kuzzle current Epoc timestamp: {}", now)
-        }
-        None => eprintln!("No timestamp reveived from the Kuzzle server!"),
+    match response.get_result() {
+        Some(result) => println!("Kuzzle current Epoc timestamp: {}", &result["now"]),
+        None => eprintln!("No timestamp was reveived from the Kuzzle server!"),
     }
 
     k.disconnect().await
 }
-
 ```
 
 ## About
