@@ -8,6 +8,8 @@ on:
     paths-ignore:
       - '**/README.md'
       - '**/.gitignore'
+      - '.rusty-hook.toml'
+      - 'LICENSE'
   pull_request:
     branches: 
       - master
@@ -15,6 +17,8 @@ on:
     paths-ignore:
       - '**/README.md'
       - '**/.gitignore'
+      - '.rusty-hook.toml'
+      - 'LICENSE'
 
 env:
   CARGO_TERM_COLOR: always
@@ -30,6 +34,22 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           args: --all-features
+  
+  coverage:
+    name: 📝 Coverage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      - name: Run cargo-tarpaulin
+        uses: actions-rs/tarpaulin@v0.1
+        with:
+          args: '-- --test-threads 1'
+      - name: Upload to codecov.io
+        uses: codecov/codecov-action@v1.0.2
+        with:
+          token: ${{secrets.CODECOV_TOKEN}}
+
   unit-test:
     name: ⚙️ Unit tests
     runs-on: ubuntu-latest
