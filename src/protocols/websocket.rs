@@ -1,11 +1,13 @@
-use async_std::io::{Error as IoError, ErrorKind as IoErrorKind};
+use async_std::io::Error as IoError;
+use async_std::io::ErrorKind as IoErrorKind;
 use async_trait::async_trait;
 use async_tungstenite::async_std::connect_async;
 use async_tungstenite::async_std::ConnectStream;
 use async_tungstenite::tungstenite::error::Error as WsErrors;
 use async_tungstenite::tungstenite::protocol::Message;
 use async_tungstenite::WebSocketStream;
-use futures_util::{sink::SinkExt, stream::StreamExt};
+use futures_util::sink::SinkExt;
+use futures_util::stream::StreamExt;
 use std::error::Error;
 use url::Url;
 
@@ -100,7 +102,7 @@ impl WebSocket {
     pub fn new(host: &str, options: Option<WebSocketOptions>) -> WebSocket {
         WebSocket {
             host: host.into(),
-            options: options.unwrap_or(WebSocketOptions::new()),
+            options: options.unwrap_or_default(),
             stream: None,
         }
     }
@@ -169,6 +171,8 @@ impl Protocol for WebSocket {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde_json::json;
+    use surimi::MockServer;
 
     #[test]
     fn should_forge_ws_url() {
@@ -187,5 +191,87 @@ mod tests {
         let mut ws = WebSocket::new("localhost42", None);
         let result = ws.connect().await;
         assert!(result.is_err());
+    }
+
+    #[async_std::test]
+    async fn should_disconnect() -> Result<(), Box<dyn Error>> {
+        let (_, port) = MockServer::default().start().await?;
+
+        let mut ws = WebSocket::new("localhost", Some(WebSocketOptions::new().port(port)));
+        ws.connect().await?;
+
+        assert!(ws.stream.is_some());
+
+        ws.disconnect().await?;
+        Ok(())
+    }
+
+    #[async_std::test]
+    async fn should_not_disconnect_twice() -> Result<(), Box<dyn Error>> {
+        let (_, port) = surimi::MockServer::default().start().await?;
+
+        let mut ws = WebSocket::new("localhost", Some(WebSocketOptions::new().port(port)));
+        ws.connect().await?;
+
+        assert!(ws.stream.is_some());
+
+        ws.disconnect().await?;
+        ws.disconnect().await.err().unwrap();
+
+        Ok(())
+    }
+
+    #[async_std::test]
+    async fn should_send_request() -> Result<(), Box<dyn Error>> {
+        let (_, port) = surimi::MockServer::default()
+            .responses(vec![json!({"success": true})])
+            .start()
+            .await?;
+
+        let mut ws = WebSocket::new("localhost", Some(WebSocketOptions::new().port(port)));
+        ws.connect().await?;
+
+        let raw = ws.send("Some request".into()).await?;
+        assert_eq!(raw, json!({"success": true}).to_string());
+
+        ws.disconnect().await?;
+        Ok(())
+    }
+
+    #[async_std::test]
+    async fn should_able_to_send_multiple_request() -> Result<(), Box<dyn Error>> {
+        let (_, port) = surimi::MockServer::default()
+            .responses(vec![
+                json!({"success": true}),
+                json!({"success": true}),
+                json!({"success": true}),
+            ])
+            .start()
+            .await?;
+
+        let mut ws = WebSocket::new("localhost", Some(WebSocketOptions::new().port(port)));
+        ws.connect().await?;
+
+        for _ in 0..2 {
+            let raw = &ws.send("Trigger some server responses".into()).await?;
+            assert_eq!(raw.to_string(), json!({"success": true}).to_string());
+        }
+
+        ws.disconnect().await?;
+        Ok(())
+    }
+
+    #[async_std::test]
+    async fn should_not_send_before_connect() -> Result<(), Box<dyn Error>> {
+        let (_, port) = surimi::MockServer::default()
+            .responses(vec![json!({"success": true})])
+            .start()
+            .await?;
+
+        let mut ws = WebSocket::new("localhost", Some(WebSocketOptions::new().port(port)));
+        let res = ws.send("Some request".into()).await;
+
+        assert!(res.is_err());
+        Ok(())
     }
 }

@@ -21,3 +21,4 @@ uuid = { version = "0.8", default_features = false, features = ["v4"] }
 async-std = { version = "1.6.0", default_features = false, features = [ "attributes" ] }
 faux = "0.1.3"
 rusty-hook = "^0.11.2"
+surimi = { git = "https://github.com/alexandrebouthinon/surimi", branch = "master" }
