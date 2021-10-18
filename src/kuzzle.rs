@@ -35,9 +35,9 @@ impl Kuzzle {
 mod tests {
     use super::*;
     use crate::request;
-    use async_trait::async_trait;
 
-    type BoxResult = Result<(), Box<dyn Error>>;
+    use async_trait::async_trait;
+    use serde_json::json;
 
     #[faux::create]
     pub struct MockedProtocol {}
@@ -66,6 +66,7 @@ mod tests {
     async fn should_connect() {
         let mut protocol = MockedProtocol::faux();
         faux::when!(protocol.connect).then(|_| Ok(()));
+
         let mut kuzzle = Kuzzle::new(protocol);
         assert!(kuzzle.connect().await.is_ok());
     }
@@ -74,6 +75,7 @@ mod tests {
     async fn should_not_connect() {
         let mut protocol = MockedProtocol::faux();
         faux::when!(protocol.connect).then(|_| Err(forge_error()));
+
         let mut kuzzle = Kuzzle::new(protocol);
         assert!(kuzzle.connect().await.is_err());
     }
@@ -82,6 +84,7 @@ mod tests {
     async fn should_disconnect() {
         let mut protocol = MockedProtocol::faux();
         faux::when!(protocol.disconnect).then(|_| Ok(()));
+
         let mut kuzzle = Kuzzle::new(protocol);
         assert!(kuzzle.disconnect().await.is_ok());
     }
@@ -90,43 +93,45 @@ mod tests {
     async fn should_not_disconnect() {
         let mut protocol = MockedProtocol::faux();
         faux::when!(protocol.disconnect).then(|_| Err(forge_error()));
+
         let mut kuzzle = Kuzzle::new(protocol);
         assert!(kuzzle.disconnect().await.is_err());
     }
 
     #[async_std::test]
-    async fn should_query() -> BoxResult {
+    async fn should_query() -> Result<(), Box<dyn Error>> {
         let mut protocol = MockedProtocol::faux();
         faux::when!(protocol.send).then(|_| {
-            Ok(String::from(
-                r#"{
-                    "requestId": "my-fake-request-id",
-                    "action": "fakeAction",
-                    "controller": "fakeController",
-                    "status": 200, 
-                    "result": {
-                        "success": true 
-                    }
-                }"#,
-            ))
+            Ok(json!({
+                "requestId": "my-fake-request-id",
+                "action": "fakeAction",
+                "controller": "fakeController",
+                "status": 200,
+                "result": {
+                    "success": true
+                }
+            })
+            .to_string())
         });
+
         let mut kuzzle = Kuzzle::new(protocol);
-        let request: Request = request!({
+        let request = request!({
             "controller": "fakeController",
             "action": "fakeAction"
         })?;
 
-        let response: Response = kuzzle.query(&request).await?;
-        let success: bool = serde_json::from_value(response.result.unwrap()["success"].clone())?;
+        let response = kuzzle.query(&request).await?;
         assert_eq!(response.status, 200);
-        assert!(success);
+        assert_eq!(response.result.unwrap()["success"], true);
+
         Ok(())
     }
 
     #[async_std::test]
-    async fn should_not_parse_response() -> BoxResult {
+    async fn should_not_parse_response() -> Result<(), Box<dyn Error>> {
         let mut protocol = MockedProtocol::faux();
         faux::when!(protocol.send).then(|_| Ok(String::from("NOT A VALID JSON STRING")));
+
         let mut kuzzle = Kuzzle::new(protocol);
         let request = request!({
             "controller": "fakeController",
@@ -135,6 +140,7 @@ mod tests {
 
         let result = kuzzle.query(&request).await;
         assert!(result.is_err());
+
         Ok(())
     }
 }
