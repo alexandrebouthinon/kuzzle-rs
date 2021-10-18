@@ -1,5 +1,5 @@
-use crate::api::{Request, Response};
 use crate::protocols::Protocol;
+use crate::types::{Request, Response};
 
 use std::error::Error;
 

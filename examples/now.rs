@@ -13,7 +13,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let response = k.query(&request).await?;
 
-    match response.get_result() {
+    match response.result {
         Some(result) => println!("Kuzzle current Epoc timestamp: {}", &result["now"]),
         None => eprintln!("No timestamp was reveived from the Kuzzle server!"),
     }

@@ -30,7 +30,7 @@ macro_rules! request {
 macro_rules! forge_request_from_json {
     ($($json:tt)+) => {{
         let json = serde_json::json!($($json)+);
-        serde_json::from_value::<$crate::api::Request>(json)
+        serde_json::from_value::<$crate::types::Request>(json)
     }}
 }
 
