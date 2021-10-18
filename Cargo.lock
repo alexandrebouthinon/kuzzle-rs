@@ -1016,7 +1016,7 @@ checksum = "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623"
 [[package]]
 name = "surimi"
 version = "0.1.0"
-source = "git+https://github.com/alexandrebouthinon/surimi?branch=master#c87e892949e7f9796b446bdec941a9ee764fe6d3"
+source = "git+https://github.com/alexandrebouthinon/surimi?branch=master#1b672c5d7efc738ac9ed0ee423bc5d587e9ff81b"
 dependencies = [
  "async-std",
  "async-tungstenite",

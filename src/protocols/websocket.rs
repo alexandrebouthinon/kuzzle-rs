@@ -15,22 +15,14 @@ use super::Protocol;
 
 pub struct WebSocketOptions {
     pub port: u16,
-    pub headers: Vec<(String, String)>,
     pub ssl: bool,
-    pub reconnection_delay: u64,
-    pub ping_interval: u64,
-    pub auto_reconnect: bool,
 }
 
 impl Default for WebSocketOptions {
     fn default() -> Self {
         Self {
             port: 7512,
-            headers: Vec::new(),
             ssl: false,
-            reconnection_delay: 1000,
-            ping_interval: 2000,
-            auto_reconnect: true,
         }
     }
 }
@@ -45,28 +37,8 @@ impl WebSocketOptions {
         self
     }
 
-    pub fn headers(mut self, headers: Vec<(String, String)>) -> Self {
-        self.headers = headers;
-        self
-    }
-
     pub fn ssl(mut self, ssl: bool) -> Self {
         self.ssl = ssl;
-        self
-    }
-
-    pub fn reconnection_delay(mut self, reconnection_delay: u64) -> Self {
-        self.reconnection_delay = reconnection_delay;
-        self
-    }
-
-    pub fn ping_interval(mut self, ping_interval: u64) -> Self {
-        self.ping_interval = ping_interval;
-        self
-    }
-
-    pub fn auto_reconnect(mut self, auto_reconnect: bool) -> Self {
-        self.auto_reconnect = auto_reconnect;
         self
     }
 }
@@ -93,9 +65,7 @@ impl WebSocket {
     ///
     /// let options = WebSocketOptions::new()
     ///     .port(7512)
-    ///     .ssl(true)
-    ///     .auto_reconnect(true)
-    ///     .ping_interval(2000);
+    ///     .ssl(true);
     ///
     /// let customized_ws = WebSocket::new("localhost", Some(options));
     /// ```
@@ -224,7 +194,7 @@ mod tests {
     #[async_std::test]
     async fn should_send_request() -> Result<(), Box<dyn Error>> {
         let (_, port) = surimi::MockServer::default()
-            .responses(vec![json!({"success": true})])
+            .responses(vec![json!({"hello": "world"})])
             .start()
             .await?;
 
@@ -232,7 +202,7 @@ mod tests {
         ws.connect().await?;
 
         let raw = ws.send("Some request".into()).await?;
-        assert_eq!(raw, json!({"success": true}).to_string());
+        assert_eq!(raw, json!({"hello": "world"}).to_string());
 
         ws.disconnect().await?;
         Ok(())
@@ -242,9 +212,9 @@ mod tests {
     async fn should_able_to_send_multiple_request() -> Result<(), Box<dyn Error>> {
         let (_, port) = surimi::MockServer::default()
             .responses(vec![
-                json!({"success": true}),
-                json!({"success": true}),
-                json!({"success": true}),
+                json!({"hello": "world"}),
+                json!({"hello": "world"}),
+                json!({"hello": "world"}),
             ])
             .start()
             .await?;
@@ -254,7 +224,7 @@ mod tests {
 
         for _ in 0..2 {
             let raw = &ws.send("Trigger some server responses".into()).await?;
-            assert_eq!(raw.to_string(), json!({"success": true}).to_string());
+            assert_eq!(raw.to_string(), json!({"hello": "world"}).to_string());
         }
 
         ws.disconnect().await?;
@@ -264,7 +234,7 @@ mod tests {
     #[async_std::test]
     async fn should_not_send_before_connect() -> Result<(), Box<dyn Error>> {
         let (_, port) = surimi::MockServer::default()
-            .responses(vec![json!({"success": true})])
+            .responses(vec![json!({"hello": "world"})])
             .start()
             .await?;
 
@@ -272,6 +242,19 @@ mod tests {
         let res = ws.send("Some request".into()).await;
 
         assert!(res.is_err());
+        Ok(())
+    }
+
+    #[async_std::test]
+    async fn should_send_but_no_response() -> Result<(), Box<dyn Error>> {
+        let (_, port) = surimi::MockServer::default().start().await?;
+
+        let mut ws = WebSocket::new("localhost", Some(WebSocketOptions::new().port(port)));
+        ws.connect().await?;
+
+        let res = ws.send("Some request".into()).await;
+        assert!(res.is_err());
+
         Ok(())
     }
 }
