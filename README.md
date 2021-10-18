@@ -5,6 +5,9 @@
   <a href="https://github.com/alexandrebouthinon/kuzzle-rs/actions/workflows/main.yml">
   <img alt="GitHub Workflow Status" src="https://img.shields.io/github/workflow/status/alexandrebouthinon/kuzzle-rs/Rust?label=workflow&logo=github">
   </a>
+  <a href="https://codecov.io/gh/alexandrebouthinon/kuzzle-rs">
+    <img src="https://codecov.io/gh/alexandrebouthinon/kuzzle-rs/branch/master/graph/badge.svg?token=7y4CFOknIJ"/>
+  </a>    
   <a href="https://github.com/alexandrebouthinon/kuzzle-rs/blob/master/LICENSE">
     <img src="https://img.shields.io/github/license/alexandrebouthinon/kuzzle-rs.svg?style=flat">
   </a>
