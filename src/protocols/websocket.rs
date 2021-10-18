@@ -1,13 +1,10 @@
-use async_native_tls::TlsStream;
 use async_std::io::{Error as IoError, ErrorKind as IoErrorKind};
-use async_std::net::TcpStream;
 use async_trait::async_trait;
-use async_tungstenite::{
-    async_std::connect_async,
-    stream::Stream,
-    tungstenite::{error::Error as TungsteniteErrors, protocol::Message},
-    WebSocketStream,
-};
+use async_tungstenite::async_std::connect_async;
+use async_tungstenite::async_std::ConnectStream;
+use async_tungstenite::tungstenite::error::Error as WsErrors;
+use async_tungstenite::tungstenite::protocol::Message;
+use async_tungstenite::WebSocketStream;
 use futures_util::{sink::SinkExt, stream::StreamExt};
 use std::error::Error;
 use url::Url;
@@ -75,7 +72,7 @@ impl WebSocketOptions {
 pub struct WebSocket {
     host: String,
     options: WebSocketOptions,
-    stream: Option<WebSocketStream<Stream<TcpStream, TlsStream<TcpStream>>>>,
+    stream: Option<WebSocketStream<ConnectStream>>,
 }
 
 impl WebSocket {
@@ -86,7 +83,19 @@ impl WebSocket {
     /// ```
     /// use kuzzle::protocols::WebSocket;
     ///
+    /// // You can rely on the default options...
     /// let websocket = WebSocket::new("localhost", None);
+    ///
+    /// // ...or make your own configuration
+    /// use kuzzle::protocols::WebSocketOptions;
+    ///
+    /// let options = WebSocketOptions::new()
+    ///     .port(7512)
+    ///     .ssl(true)
+    ///     .auto_reconnect(true)
+    ///     .ping_interval(2000);
+    ///
+    /// let customized_ws = WebSocket::new("localhost", Some(options));
     /// ```
     pub fn new(host: &str, options: Option<WebSocketOptions>) -> WebSocket {
         WebSocket {
@@ -96,7 +105,7 @@ impl WebSocket {
         }
     }
 
-    /// Create and return a valid WebSocket URL using host, port and SSL configuration
+    /// Create and return a valid WebSocket URL using provided host and WebSocketOptions
     ///
     /// # Example
     ///
@@ -105,6 +114,11 @@ impl WebSocket {
     ///
     /// let websocket = WebSocket::new("localhost", None);
     /// assert_eq!("ws://localhost:7512", &websocket.get_url());
+    ///
+    /// use kuzzle::protocols::WebSocketOptions;
+    ///
+    /// let websocket_ssl = WebSocket::new("localhost", Some(WebSocketOptions::new().ssl(true)));
+    /// assert_eq!("wss://localhost:7512", &websocket_ssl.get_url());
     /// ```
     pub fn get_url(&self) -> String {
         match &self.options.ssl {
@@ -119,6 +133,7 @@ impl Protocol for WebSocket {
     async fn connect(&mut self) -> Result<(), Box<dyn Error>> {
         let url = Url::parse(&self.get_url())?;
         let (ws_stream, _) = connect_async(url).await?;
+
         self.stream = Some(ws_stream);
         Ok(())
     }
@@ -130,7 +145,7 @@ impl Protocol for WebSocket {
                 self.stream = None;
                 Ok(())
             }
-            None => Err(Box::new(TungsteniteErrors::AlreadyClosed)),
+            None => Err(Box::new(WsErrors::AlreadyClosed)),
         }
     }
 
@@ -146,7 +161,7 @@ impl Protocol for WebSocket {
                 })??;
                 Ok(res.into_text()?)
             }
-            None => Err(Box::new(TungsteniteErrors::ConnectionClosed)),
+            None => Err(Box::new(WsErrors::ConnectionClosed)),
         }
     }
 }
